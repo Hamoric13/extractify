@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extractify</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Extractify</h1>
+    <p>{{ message }}</p>
+
+    <form id="media-form">
+      <label for="url">Paste a media URL</label>
+      <input id="url" name="url" type="text" placeholder="https://..." />
+      <button type="submit">Fetch formats</button>
+    </form>
+
+    <div id="status"></div>
+    <div id="results"></div>
+  </main>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

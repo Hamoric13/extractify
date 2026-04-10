@@ -1,0 +1,135 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    color: #111;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .container {
+    max-width: 1000px;
+    margin: 40px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  }
+  
+  h1 {
+    margin-top: 0;
+  }
+  
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  input[type="text"] {
+    padding: 12px;
+    font-size: 16px;
+  }
+  
+  button {
+    padding: 12px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  #status {
+    margin-top: 20px;
+    font-weight: bold;
+  }
+  
+  #results {
+    margin-top: 24px;
+  }
+  
+  .table-wrap {
+    overflow-x: auto;
+    margin-top: 12px;
+  }
+  
+  .formats-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+    min-width: 700px;
+    background: white;
+  }
+  
+  .formats-table th,
+  .formats-table td {
+    border: 1px solid #ddd;
+    padding: 6px 8px;
+    text-align: left;
+    font-size: 13px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  
+  .formats-table th {
+    background: #f0f0f0;
+  }
+  
+  .formats-table tr:nth-child(even) {
+    background: #fafafa;
+  }
+  
+  .radio-cell {
+    width: 50px;
+    text-align: center;
+  }
+  
+  .codec-cell {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .selected-card {
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: #fafafa;
+  }
+  
+  .clip-controls {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .clip-controls input[type="text"] {
+    padding: 10px;
+    font-size: 15px;
+  }
+  
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .hint {
+    margin: 0;
+    font-size: 14px;
+    color: #555;
+  }
+  
+  #error,
+  .error-text {
+    color: #b00020;
+    font-weight: 600;
+  }
+  
+  .success-text {
+    color: #0a7a2f;
+    font-weight: 600;
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
