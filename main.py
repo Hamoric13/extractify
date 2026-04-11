@@ -16,6 +16,7 @@ templates = Jinja2Templates(directory="templates")
 TEMP_DIR = "temp"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
+COOKIE_FILE = "/app/secrets/cookies.txt"
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -99,6 +100,7 @@ async def get_media_info(request: Request):
     ydl_opts = {
         "quiet": True,
         "no_warnings": True,
+        "cookiefile": COOKIE_FILE,
     }
 
     try:
@@ -237,7 +239,11 @@ async def process_media(request: Request):
         end_seconds = None
 
         if media_type == "video" or (media_type == "audio" and not full_audio):
-            with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True}) as ydl:
+            with yt_dlp.YoutubeDL({
+                "quiet": True,
+                "no_warnings": True,
+                "cookiefile": COOKIE_FILE,
+            }) as ydl:
                 info = ydl.extract_info(url, download=False)
             duration = info.get("duration", 0)
 
@@ -301,6 +307,7 @@ async def process_media(request: Request):
                 "format": format_id,
                 "outtmpl": output_template,
                 "noplaylist": True,
+                "cookiefile": COOKIE_FILE,
             }
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -318,6 +325,7 @@ async def process_media(request: Request):
                 "format": format_string,
                 "outtmpl": output_template,
                 "noplaylist": True,
+                "cookiefile": COOKIE_FILE,
                 "download_ranges": yt_dlp.utils.download_range_func(
                     None,
                     [(start_seconds, end_seconds)]
