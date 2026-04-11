@@ -18,11 +18,19 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 COOKIE_FILE = "/app/secrets/cookies.txt"
 
-EXTRACTOR_ARGS = {
-    "youtube": {
-        "player_client": ["tv_embedded"],
-    }
+YDL_BASE_OPTS = {
+    "quiet": True,
+    "no_warnings": True,
+    "cookiefile": COOKIE_FILE,
+    "extractor_args": {
+        "youtube": {
+            "player_client": ["web"],
+        }
+    },
+    "js_runtimes": ["node"],
+    "remote_components": ["ejs:github"],
 }
+
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -103,12 +111,7 @@ async def get_media_info(request: Request):
     if not url:
         return JSONResponse({"error": "URL is required."}, status_code=400)
 
-    ydl_opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "cookiefile": COOKIE_FILE,
-        "extractor_args": EXTRACTOR_ARGS,
-    }
+    ydl_opts = YDL_BASE_OPTS.copy()
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -246,12 +249,8 @@ async def process_media(request: Request):
         end_seconds = None
 
         if media_type == "video" or (media_type == "audio" and not full_audio):
-            with yt_dlp.YoutubeDL({
-                "quiet": True,
-                "no_warnings": True,
-                "cookiefile": COOKIE_FILE,
-                "extractor_args": EXTRACTOR_ARGS,
-            }) as ydl:
+            info_opts = YDL_BASE_OPTS.copy()
+            with yt_dlp.YoutubeDL(info_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
             duration = info.get("duration", 0)
 
@@ -309,15 +308,12 @@ async def process_media(request: Request):
         output_template = os.path.join(TEMP_DIR, f"{job_id}.%(ext)s")
 
         if media_type == "audio" and full_audio:
-            ydl_opts = {
-                "quiet": True,
-                "no_warnings": True,
+            ydl_opts = YDL_BASE_OPTS.copy()
+            ydl_opts.update({
                 "format": format_id,
                 "outtmpl": output_template,
                 "noplaylist": True,
-                "cookiefile": COOKIE_FILE,
-                "extractor_args": EXTRACTOR_ARGS,
-            }
+            })
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
@@ -328,20 +324,17 @@ async def process_media(request: Request):
             else:
                 format_string = format_id
 
-            ydl_opts = {
-                "quiet": True,
-                "no_warnings": True,
+            ydl_opts = YDL_BASE_OPTS.copy()
+            ydl_opts.update({
                 "format": format_string,
                 "outtmpl": output_template,
                 "noplaylist": True,
-                "cookiefile": COOKIE_FILE,
-                "extractor_args": EXTRACTOR_ARGS,
                 "download_ranges": yt_dlp.utils.download_range_func(
                     None,
                     [(start_seconds, end_seconds)]
                 ),
                 "force_keyframes_at_cuts": True,
-            }
+            })
 
             if media_type == "video":
                 ydl_opts["merge_output_format"] = "mp4"
