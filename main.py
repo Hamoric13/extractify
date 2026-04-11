@@ -18,6 +18,12 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 COOKIE_FILE = "/app/secrets/cookies.txt"
 
+EXTRACTOR_ARGS = {
+    "youtube": {
+        "player_client": ["tv_embedded"],
+    }
+}
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse(
@@ -101,6 +107,7 @@ async def get_media_info(request: Request):
         "quiet": True,
         "no_warnings": True,
         "cookiefile": COOKIE_FILE,
+        "extractor_args": EXTRACTOR_ARGS,
     }
 
     try:
@@ -243,6 +250,7 @@ async def process_media(request: Request):
                 "quiet": True,
                 "no_warnings": True,
                 "cookiefile": COOKIE_FILE,
+                "extractor_args": EXTRACTOR_ARGS,
             }) as ydl:
                 info = ydl.extract_info(url, download=False)
             duration = info.get("duration", 0)
@@ -308,6 +316,7 @@ async def process_media(request: Request):
                 "outtmpl": output_template,
                 "noplaylist": True,
                 "cookiefile": COOKIE_FILE,
+                "extractor_args": EXTRACTOR_ARGS,
             }
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -326,6 +335,7 @@ async def process_media(request: Request):
                 "outtmpl": output_template,
                 "noplaylist": True,
                 "cookiefile": COOKIE_FILE,
+                "extractor_args": EXTRACTOR_ARGS,
                 "download_ranges": yt_dlp.utils.download_range_func(
                     None,
                     [(start_seconds, end_seconds)]
