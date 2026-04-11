@@ -27,8 +27,8 @@ YDL_BASE_OPTS = {
             "player_client": ["web"],
         }
     },
-    "js_runtimes": ["node"],
-    "remote_components": ["ejs:github"],
+    "js_runtimes": {"node": {}},
+    "remote_components": {"ejs:github": {}},
 }
 
 
