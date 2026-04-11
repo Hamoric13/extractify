@@ -268,6 +268,7 @@ async function processSelection() {
     start_time: startInput ? startInput.value.trim() : "",
     end_time: endInput ? endInput.value.trim() : "",
     full_audio: fullAudioCheckbox ? fullAudioCheckbox.checked : false,
+    duration: currentMediaDuration,
   };
 
   setProcessingState(true);

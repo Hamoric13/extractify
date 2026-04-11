@@ -214,6 +214,7 @@ async def process_media(request: Request):
     start_time = data.get("start_time", "")
     end_time = data.get("end_time", "")
     full_audio = bool(data.get("full_audio", False))
+    duration = float(data.get("duration", 0))
 
     if not url:
         return JSONResponse({"error": "URL is required."}, status_code=400)
@@ -225,17 +226,8 @@ async def process_media(request: Request):
         return JSONResponse({"error": "Invalid media type."}, status_code=400)
 
     try:
-        duration = 0
         start_seconds = None
         end_seconds = None
-
-        if media_type == "video" or (media_type == "audio" and not full_audio):
-            result = run_ytdlp("--dump-json", "--no-playlist", url)
-            if result.returncode != 0:
-                error = result.stderr.strip().splitlines()[-1] if result.stderr else "Failed to fetch media info."
-                return JSONResponse({"error": error}, status_code=500)
-            info = json.loads(result.stdout)
-            duration = info.get("duration", 0)
 
         if media_type == "video":
             start_seconds = parse_timestamp_to_seconds(start_time)
