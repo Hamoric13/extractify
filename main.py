@@ -2,11 +2,12 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import yt_dlp
 import os
 import uuid
 import threading
 import time
+import subprocess
+import json
 
 app = FastAPI()
 
@@ -18,45 +19,18 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 COOKIE_FILE = "/app/secrets/cookies.txt"
 
-YDL_BASE_OPTS = {
-    "quiet": True,
-    "no_warnings": True,
-    "cookiefile": COOKIE_FILE,
-    "extractor_args": {
-        "youtube": {
-            "player_client": ["web"],
-        }
-    },
-    "js_runtimes": {"node": {}},
-    "remote_components": {"ejs:github": {}},
-}
+BASE_CMD = [
+    "yt-dlp",
+    "--cookies", COOKIE_FILE,
+    "--js-runtimes", "node",
+    "--remote-components", "ejs:github",
+]
 
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse(
-        request,
-        "index.html",
-        {"message": "Extractify is alive."}
-    )
-
-
-def pick_better_video_format(current_format, new_format):
-    current_filesize = current_format.get("filesize") or 0
-    new_filesize = new_format.get("filesize") or 0
-
-    if new_filesize > current_filesize:
-        return new_format
-    if current_filesize > new_filesize:
-        return current_format
-
-    current_tbr = current_format.get("tbr") or 0
-    new_tbr = new_format.get("tbr") or 0
-
-    if new_tbr > current_tbr:
-        return new_format
-
-    return current_format
+def run_ytdlp(*args):
+    cmd = BASE_CMD + list(args)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    return result
 
 
 def parse_timestamp_to_seconds(value):
@@ -103,6 +77,15 @@ def schedule_file_delete(filepath, delay_seconds=3600):
     threading.Thread(target=delete_later, daemon=True).start()
 
 
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {"message": "Extractify is alive."}
+    )
+
+
 @app.post("/api/info")
 async def get_media_info(request: Request):
     data = await request.json()
@@ -111,116 +94,114 @@ async def get_media_info(request: Request):
     if not url:
         return JSONResponse({"error": "URL is required."}, status_code=400)
 
-    ydl_opts = YDL_BASE_OPTS.copy()
+    result = run_ytdlp("--dump-json", "--no-playlist", url)
+
+    if result.returncode != 0:
+        error = result.stderr.strip().splitlines()[-1] if result.stderr else "Failed to fetch media info."
+        return JSONResponse({"error": error}, status_code=500)
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
+        info = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return JSONResponse({"error": "Failed to parse media info."}, status_code=500)
 
-        title = info.get("title", "Unknown title")
-        duration = info.get("duration", 0)
-        formats = info.get("formats", [])
+    title = info.get("title", "Unknown title")
+    duration = info.get("duration", 0)
+    formats = info.get("formats", [])
 
-        best_video_by_resolution = {}
-        audio_formats = []
-        seen_audio = set()
+    best_video_by_resolution = {}
+    audio_formats = []
+    seen_audio = set()
 
-        for f in formats:
-            ext = f.get("ext")
-            format_id = f.get("format_id")
-            vcodec = f.get("vcodec")
-            acodec = f.get("acodec")
-            width = f.get("width")
-            height = f.get("height")
-            filesize = f.get("filesize")
-            abr = f.get("abr")
-            resolution = f.get("resolution")
-            tbr = f.get("tbr")
+    for f in formats:
+        ext = f.get("ext")
+        format_id = f.get("format_id")
+        vcodec = f.get("vcodec")
+        acodec = f.get("acodec")
+        width = f.get("width")
+        height = f.get("height")
+        filesize = f.get("filesize")
+        abr = f.get("abr")
+        resolution = f.get("resolution")
+        tbr = f.get("tbr")
 
-            if ext == "mhtml":
+        if ext == "mhtml":
+            continue
+
+        if vcodec == "none" and acodec == "none":
+            continue
+
+        if vcodec == "none" and acodec != "none":
+            audio_key = (ext, acodec, abr, filesize)
+            if audio_key in seen_audio:
                 continue
 
-            if vcodec == "none" and acodec == "none":
-                continue
+            seen_audio.add(audio_key)
 
-            if vcodec == "none" and acodec != "none":
-                audio_key = (ext, acodec, abr, filesize)
-                if audio_key in seen_audio:
-                    continue
-
-                seen_audio.add(audio_key)
-
-                audio_formats.append({
-                    "format_id": format_id,
-                    "ext": ext,
-                    "resolution": "audio only",
-                    "width": None,
-                    "height": None,
-                    "filesize": filesize,
-                    "vcodec": "none",
-                    "acodec": acodec,
-                    "abr": abr,
-                    "tbr": tbr,
-                })
-                continue
-
-            if ext != "mp4":
-                continue
-
-            if vcodec == "none":
-                continue
-
-            if height is not None and width is not None:
-                resolution_key = (width, height)
-                display_resolution = f"{width}x{height}"
-            elif resolution:
-                resolution_key = resolution
-                display_resolution = resolution
-            else:
-                resolution_key = "unknown"
-                display_resolution = "Unknown"
-
-            candidate = {
+            audio_formats.append({
                 "format_id": format_id,
                 "ext": ext,
-                "resolution": display_resolution,
-                "width": width,
-                "height": height,
+                "resolution": "audio only",
+                "width": None,
+                "height": None,
                 "filesize": filesize,
-                "vcodec": vcodec,
+                "vcodec": "none",
                 "acodec": acodec,
                 "abr": abr,
                 "tbr": tbr,
-            }
+            })
+            continue
 
-            if resolution_key not in best_video_by_resolution:
-                best_video_by_resolution[resolution_key] = candidate
-            else:
-                best_video_by_resolution[resolution_key] = pick_better_video_format(
-                    best_video_by_resolution[resolution_key],
-                    candidate,
-                )
+        if ext != "mp4":
+            continue
 
-        video_formats = list(best_video_by_resolution.values())
-        video_formats.sort(key=lambda f: (f.get("height") or 0, f.get("width") or 0))
+        if vcodec == "none":
+            continue
 
-        audio_formats.sort(
-            key=lambda f: (
-                f.get("abr") or 0,
-                f.get("filesize") or 0,
-            ),
-            reverse=True,
-        )
+        if height is not None and width is not None:
+            resolution_key = (width, height)
+            display_resolution = f"{width}x{height}"
+        elif resolution:
+            resolution_key = resolution
+            display_resolution = resolution
+        else:
+            resolution_key = "unknown"
+            display_resolution = "Unknown"
 
-        return {
-            "title": title,
-            "duration": duration,
-            "video_formats": video_formats,
-            "audio_formats": audio_formats,
+        candidate = {
+            "format_id": format_id,
+            "ext": ext,
+            "resolution": display_resolution,
+            "width": width,
+            "height": height,
+            "filesize": filesize,
+            "vcodec": vcodec,
+            "acodec": acodec,
+            "abr": abr,
+            "tbr": tbr,
         }
 
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        if resolution_key not in best_video_by_resolution:
+            best_video_by_resolution[resolution_key] = candidate
+        else:
+            current = best_video_by_resolution[resolution_key]
+            if (f.get("filesize") or 0) > (current.get("filesize") or 0):
+                best_video_by_resolution[resolution_key] = candidate
+
+    video_formats = list(best_video_by_resolution.values())
+    video_formats.sort(key=lambda f: (f.get("height") or 0, f.get("width") or 0))
+
+    audio_formats.sort(
+        key=lambda f: (f.get("abr") or 0, f.get("filesize") or 0),
+        reverse=True,
+    )
+
+    return {
+        "title": title,
+        "duration": duration,
+        "video_formats": video_formats,
+        "audio_formats": audio_formats,
+    }
 
 
 @app.post("/api/process")
@@ -249,9 +230,11 @@ async def process_media(request: Request):
         end_seconds = None
 
         if media_type == "video" or (media_type == "audio" and not full_audio):
-            info_opts = YDL_BASE_OPTS.copy()
-            with yt_dlp.YoutubeDL(info_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
+            result = run_ytdlp("--dump-json", "--no-playlist", url)
+            if result.returncode != 0:
+                error = result.stderr.strip().splitlines()[-1] if result.stderr else "Failed to fetch media info."
+                return JSONResponse({"error": error}, status_code=500)
+            info = json.loads(result.stdout)
             duration = info.get("duration", 0)
 
         if media_type == "video":
@@ -308,15 +291,12 @@ async def process_media(request: Request):
         output_template = os.path.join(TEMP_DIR, f"{job_id}.%(ext)s")
 
         if media_type == "audio" and full_audio:
-            ydl_opts = YDL_BASE_OPTS.copy()
-            ydl_opts.update({
-                "format": format_id,
-                "outtmpl": output_template,
-                "noplaylist": True,
-            })
-
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
+            result = run_ytdlp(
+                "--format", format_id,
+                "--output", output_template,
+                "--no-playlist",
+                url,
+            )
 
         else:
             if media_type == "video":
@@ -324,23 +304,22 @@ async def process_media(request: Request):
             else:
                 format_string = format_id
 
-            ydl_opts = YDL_BASE_OPTS.copy()
-            ydl_opts.update({
-                "format": format_string,
-                "outtmpl": output_template,
-                "noplaylist": True,
-                "download_ranges": yt_dlp.utils.download_range_func(
-                    None,
-                    [(start_seconds, end_seconds)]
-                ),
-                "force_keyframes_at_cuts": True,
-            })
+            extra_args = [
+                "--format", format_string,
+                "--output", output_template,
+                "--no-playlist",
+                "--download-sections", f"*{start_seconds}-{end_seconds}",
+                "--force-keyframes-at-cuts",
+            ]
 
             if media_type == "video":
-                ydl_opts["merge_output_format"] = "mp4"
+                extra_args += ["--merge-output-format", "mp4"]
 
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
+            result = run_ytdlp(*extra_args, url)
+
+        if result.returncode != 0:
+            error = result.stderr.strip().splitlines()[-1] if result.stderr else "Processing failed."
+            return JSONResponse({"error": error}, status_code=500)
 
         produced_files = [
             os.path.join(TEMP_DIR, f)
