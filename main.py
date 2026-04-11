@@ -22,8 +22,7 @@ COOKIE_FILE = "/app/secrets/cookies.txt"
 BASE_CMD = [
     "yt-dlp",
     "--cookies", COOKIE_FILE,
-    "--js-runtimes", "node",
-    "--remote-components", "ejs:github",
+    "--extractor-args", "youtube:player_client=web_safari",
 ]
 
 
