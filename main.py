@@ -24,6 +24,7 @@ BASE_CMD = [
     "--cookies", COOKIE_FILE,
     "--js-runtimes", "node:/usr/bin/node",
     "--remote-components", "ejs:github",
+    "--proxy", "http://user:pass@ip:port",
 ]
 
 
