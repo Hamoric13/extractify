@@ -325,3 +325,9 @@ footer a:hover {
   max-width: 600px;
   margin: 0 auto;
 }
+
+.download-btn-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
