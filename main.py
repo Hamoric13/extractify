@@ -135,6 +135,9 @@ async def get_media_info(request: Request):
         if vcodec == "none" and acodec == "none":
             continue
 
+        if height is not None and height > 1440:
+            continue
+
         if vcodec == "none" and acodec != "none":
             audio_key = (ext, acodec, abr, filesize)
             if audio_key in seen_audio:
