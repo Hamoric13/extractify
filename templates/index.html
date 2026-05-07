@@ -8,18 +8,30 @@
 </head>
 <body>
   <main class="container">
-    <h1>Extractify</h1>
-    <p>{{ message }}</p>
+    <header>
+      <h1>Extract<span>ify</span></h1>
+      <p class="subtitle">paste a url. pick a format. download your clip.</p>
+    </header>
 
     <form id="media-form">
-      <label for="url">Paste a media URL</label>
       <input id="url" name="url" type="text" placeholder="https://..." />
-      <button type="submit">Fetch formats</button>
+      <button type="submit">Fetch</button>
     </form>
 
     <div id="status"></div>
     <div id="results"></div>
   </main>
+
+  <footer>
+    <div class="disclaimer">
+      <p>Extractify is intended for personal use only. We are not responsible for how downloaded content is used. Users are solely liable for ensuring their downloads comply with applicable copyright laws.</p>
+      <p>We do not store, log, or share any of your data or downloaded files. Files are automatically deleted from our servers after 1 hour.</p>
+      <p>
+        © 2026 Haramrit Singh Suri &nbsp;·&nbsp;
+        <a href="https://github.com/Hamoric13" target="_blank">GitHub</a>
+      </p>
+    </div>
+  </footer>
 
   <script src="/static/script.js"></script>
 </body>

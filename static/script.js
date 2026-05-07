@@ -155,7 +155,7 @@ function renderSelectionControls() {
         <label for="end-time">End time</label>
         <input type="text" id="end-time" placeholder="${isVideo ? "00:03:00" : "00:30:00"}" />
 
-        <button type="button" id="validate-selection-btn">Validate Selection</button>
+        <button type="button" id="validate-selection-btn" class="secondary">Validate</button>
         <button type="button" id="process-selection-btn">Download</button>
 
         <div id="selection-validation-message"></div>
