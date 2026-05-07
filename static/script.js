@@ -311,9 +311,13 @@ async function processSelection() {
     }
 
     messageDiv.innerHTML = `
-      <p class="success-text">Done. Your file is ready.</p>
-      <p><a href="${data.download_url}" download>Download your file</a></p>
-    `;
+  <p class="success-text">Done. Your file is ready.</p>
+  <p><a href="${data.download_url}" download>Download your file</a></p>
+`;
+    const processButton = document.getElementById("process-selection-btn");
+    const validateButton = document.getElementById("validate-selection-btn");
+    if (processButton) processButton.style.display = "none";
+    if (validateButton) validateButton.style.display = "none";
   } catch (error) {
     console.error(error);
     messageDiv.innerHTML = `<p class="error-text">Processing failed.</p>`;
