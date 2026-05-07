@@ -27,6 +27,9 @@ function enforceTimestampFormat(input) {
     input.value = val.slice(0, 8);
   });
 }
+function isValidTimestampFormat(value) {
+  return /^\d{2}:\d{2}:\d{2}$/.test(value.trim());
+}
 
 function formatBytes(bytes) {
   if (!bytes) return "Unknown";
@@ -216,10 +219,14 @@ function validateSelection() {
       return true;
     }
   }
+  if (!isValidTimestampFormat(startInput.value) || !isValidTimestampFormat(endInput.value)) {
+    messageDiv.innerHTML = `<p class="error-text">Please enter timestamps in 00:00:00 format.</p>`;
+    return false;
+  }
 
   const startSeconds = parseTimestamp(startInput.value);
   const endSeconds = parseTimestamp(endInput.value);
-
+  
   if (startSeconds === null || endSeconds === null) {
     messageDiv.innerHTML = `<p class="error-text">Please enter valid timestamps like 00:01:30.</p>`;
     return false;
