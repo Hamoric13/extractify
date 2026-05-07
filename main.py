@@ -19,14 +19,17 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 
 COOKIE_FILE = "/app/secrets/cookies.txt"
 
+PROXY = os.environ.get("YTDLP_PROXY", "")
+
 BASE_CMD = [
     "yt-dlp",
     "--cookies", COOKIE_FILE,
     "--js-runtimes", "node:/usr/bin/node",
     "--remote-components", "ejs:github",
-    "--proxy", "http://user:pass@ip:port",
 ]
 
+if PROXY:
+    BASE_CMD += ["--proxy", PROXY]
 
 def run_ytdlp(*args):
     cmd = BASE_CMD + list(args)
