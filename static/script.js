@@ -19,6 +19,14 @@ function formatDuration(seconds) {
     .map((num) => String(num).padStart(2, "0"))
     .join(":");
 }
+function enforceTimestampFormat(input) {
+  input.addEventListener("input", () => {
+    let val = input.value.replace(/[^0-9]/g, "");
+    if (val.length >= 3) val = val.slice(0, 2) + ":" + val.slice(2);
+    if (val.length >= 6) val = val.slice(0, 5) + ":" + val.slice(5);
+    input.value = val.slice(0, 8);
+  });
+}
 
 function formatBytes(bytes) {
   if (!bytes) return "Unknown";
@@ -150,10 +158,10 @@ function renderSelectionControls() {
         }
 
         <label for="start-time">Start time</label>
-        <input type="text" id="start-time" placeholder="00:00:00" />
+        <input type="text" id="start-time" placeholder="00:00:00" maxlength="8" />
 
         <label for="end-time">End time</label>
-        <input type="text" id="end-time" placeholder="${isVideo ? "00:03:00" : "00:30:00"}" />
+        <input type="text" id="end-time" placeholder="${isVideo ? "00:03:00" : "00:30:00"}" maxlength="8" />
 
         <button type="button" id="validate-selection-btn" class="secondary">Validate</button>
         <button type="button" id="process-selection-btn">Download</button>
@@ -177,11 +185,16 @@ function renderSelectionControls() {
         startInput.value = "";
         endInput.value = "";
       }
+
+  
     });
   }
 
   document.getElementById("validate-selection-btn").addEventListener("click", validateSelection);
   document.getElementById("process-selection-btn").addEventListener("click", processSelection);
+
+  enforceTimestampFormat(document.getElementById("start-time"));
+  enforceTimestampFormat(document.getElementById("end-time"));
 }
 
 function validateSelection() {
