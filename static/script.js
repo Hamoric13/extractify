@@ -312,7 +312,7 @@ async function processSelection() {
 
     messageDiv.innerHTML = `
   <p class="success-text">Done. Your file is ready.</p>
-  <p><a href="${data.download_url}" download>Download your file</a></p>
+  <a href="${data.download_url}" download><button type="button">Download your file</button></a>
 `;
     const processButton = document.getElementById("process-selection-btn");
     const validateButton = document.getElementById("validate-selection-btn");
