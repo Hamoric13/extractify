@@ -334,8 +334,7 @@ async function processSelection() {
   };
 
   setProcessingState(true);
-  messageDiv.innerHTML = `<p class="hint">Processing your file. This can take up to 5 minutes for longer media.</p>`;
-
+  messageDiv.innerHTML = `<p class="hint"><span class="spinner"></span>Processing your file. This can take up to 5 minutes. Keep this tab open and active — especially on mobile.</p>`;
   try {
     const response = await fetch("/api/process", {
       method: "POST",
