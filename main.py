@@ -31,6 +31,9 @@ BASE_CMD = [
 if PROXY:
     BASE_CMD += ["--proxy", PROXY]
 
+if os.path.exists(COOKIE_FILE) and os.path.getsize(COOKIE_FILE) > 100:
+    BASE_CMD += ["--cookies", COOKIE_FILE]
+
 def run_ytdlp(job_id, *args):
     cmd = BASE_CMD + list(args)
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
