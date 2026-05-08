@@ -8,6 +8,7 @@ let selectedFormatGroup = null;
 let selectedFormatData = null;
 let currentMediaDuration = 0;
 let isProcessing = false;
+let currentJobId = null;
 
 function formatDuration(seconds) {
   if (!seconds && seconds !== 0) return "Unknown";
@@ -168,6 +169,7 @@ function renderSelectionControls() {
 
         <button type="button" id="validate-selection-btn" class="secondary">Validate</button>
         <button type="button" id="process-selection-btn">Download</button>
+        <button type="button" id="cancel-btn" style="display:none;" class="secondary">Cancel</button>
 
         <div id="selection-validation-message"></div>
       </div>
@@ -188,8 +190,6 @@ function renderSelectionControls() {
         startInput.value = "";
         endInput.value = "";
       }
-
-  
     });
   }
 
@@ -198,6 +198,16 @@ function renderSelectionControls() {
 
   enforceTimestampFormat(document.getElementById("start-time"));
   enforceTimestampFormat(document.getElementById("end-time"));
+
+  document.getElementById("cancel-btn").addEventListener("click", async () => {
+    if (currentJobId) {
+      await fetch(`/api/cancel/${currentJobId}`, { method: "POST" });
+      currentJobId = null;
+    }
+    setProcessingState(false);
+    const messageDiv = document.getElementById("selection-validation-message");
+    if (messageDiv) messageDiv.innerHTML = `<p class="error-text">Download cancelled.</p>`;
+  });
 }
 
 function validateSelection() {
@@ -226,7 +236,7 @@ function validateSelection() {
 
   const startSeconds = parseTimestamp(startInput.value);
   const endSeconds = parseTimestamp(endInput.value);
-  
+
   if (startSeconds === null || endSeconds === null) {
     messageDiv.innerHTML = `<p class="error-text">Please enter valid timestamps like 00:01:30.</p>`;
     return false;
@@ -257,19 +267,25 @@ function setProcessingState(isBusy) {
   isProcessing = isBusy;
   const processButton = document.getElementById("process-selection-btn");
   const validateButton = document.getElementById("validate-selection-btn");
+  const cancelButton = document.getElementById("cancel-btn");
 
   if (processButton) {
     processButton.disabled = isBusy;
     processButton.textContent = isBusy ? "Processing..." : "Download";
   }
 
-  if (validateButton) {
-    validateButton.disabled = isBusy;
-  }
+  if (validateButton) validateButton.disabled = isBusy;
+  if (cancelButton) cancelButton.style.display = isBusy ? "inline-block" : "none";
+
+  document.querySelectorAll('input[name="format_choice"]').forEach((radio) => {
+    radio.disabled = isBusy;
+  });
 }
 
 async function processSelection() {
   if (isProcessing) return;
+
+  currentJobId = crypto.randomUUID();
 
   const messageDiv = document.getElementById("selection-validation-message");
   if (!messageDiv || !selectedFormatData) return;
@@ -289,6 +305,7 @@ async function processSelection() {
     end_time: endInput ? endInput.value.trim() : "",
     full_audio: fullAudioCheckbox ? fullAudioCheckbox.checked : false,
     duration: currentMediaDuration,
+    job_id: currentJobId,
   };
 
   setProcessingState(true);
@@ -315,7 +332,6 @@ async function processSelection() {
   <div class="download-btn-wrap">
     <a href="${data.download_url}" download><button type="button">Download your file</button></a>
   </div>
-
 `;
     const processButton = document.getElementById("process-selection-btn");
     const validateButton = document.getElementById("validate-selection-btn");
@@ -358,6 +374,7 @@ form.addEventListener("submit", async (event) => {
   selectedFormatData = null;
   currentMediaDuration = 0;
   isProcessing = false;
+  currentJobId = null;
 
   if (!url) {
     statusDiv.textContent = "Please paste a URL.";

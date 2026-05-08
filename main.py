@@ -10,6 +10,7 @@ import subprocess
 import json
 
 app = FastAPI()
+active_jobs = {}
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -31,10 +32,20 @@ BASE_CMD = [
 if PROXY:
     BASE_CMD += ["--proxy", PROXY]
 
-def run_ytdlp(*args):
+def run_ytdlp(job_id, *args):
     cmd = BASE_CMD + list(args)
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    return result
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    active_jobs[job_id] = process
+    stdout, stderr = process.communicate()
+    active_jobs.pop(job_id, None)
+
+    class Result:
+        def __init__(self):
+            self.returncode = process.returncode
+            self.stdout = stdout
+            self.stderr = stderr
+
+    return Result()
 
 
 def parse_timestamp_to_seconds(value):
@@ -90,6 +101,16 @@ async def home(request: Request):
     )
 
 
+@app.post("/api/cancel/{job_id}")
+async def cancel_job(job_id: str):
+    process = active_jobs.get(job_id)
+    if process:
+        process.kill()
+        active_jobs.pop(job_id, None)
+        return {"cancelled": True}
+    return JSONResponse({"error": "Job not found."}, status_code=404)
+
+
 @app.post("/api/info")
 async def get_media_info(request: Request):
     data = await request.json()
@@ -98,7 +119,7 @@ async def get_media_info(request: Request):
     if not url:
         return JSONResponse({"error": "URL is required."}, status_code=400)
 
-    result = run_ytdlp("--dump-json", "--no-playlist", url)
+    result = run_ytdlp("info", "--dump-json", "--no-playlist", url)
 
     if result.returncode != 0:
         error = result.stderr.strip().splitlines()[-1] if result.stderr else "Failed to fetch media info."
@@ -222,6 +243,7 @@ async def process_media(request: Request):
     end_time = data.get("end_time", "")
     full_audio = bool(data.get("full_audio", False))
     duration = float(data.get("duration", 0))
+    job_id = str(data.get("job_id", str(uuid.uuid4())))
 
     if not url:
         return JSONResponse({"error": "URL is required."}, status_code=400)
@@ -286,11 +308,11 @@ async def process_media(request: Request):
                     status_code=400,
                 )
 
-        job_id = str(uuid.uuid4())
         output_template = os.path.join(TEMP_DIR, f"{job_id}.%(ext)s")
 
         if media_type == "audio" and full_audio:
             result = run_ytdlp(
+                job_id,
                 "--format", format_id,
                 "--output", output_template,
                 "--no-playlist",
@@ -314,7 +336,7 @@ async def process_media(request: Request):
             if media_type == "video":
                 extra_args += ["--merge-output-format", "mp4"]
 
-            result = run_ytdlp(*extra_args, url)
+            result = run_ytdlp(job_id, *extra_args, url)
 
         if result.returncode != 0:
             error = result.stderr.strip().splitlines()[-1] if result.stderr else "Processing failed."
