@@ -440,5 +440,3 @@ window.addEventListener("beforeunload", (event) => {
     navigator.sendBeacon(`/api/cancel/${currentJobId}`);
   }
 });
-
-);
