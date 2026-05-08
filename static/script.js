@@ -168,8 +168,7 @@ function renderSelectionControls() {
         <input type="text" id="end-time" placeholder="${isVideo ? "00:03:00" : "00:30:00"}" maxlength="8" />
 
         <button type="button" id="validate-selection-btn" class="secondary">Validate</button>
-        <button type="button" id="process-selection-btn">Download</button>
-        <button type="button" id="cancel-btn" style="display:none;" class="secondary">Cancel</button>
+        <button type="button" id="process-selection-btn" disabled>Download</button>        <button type="button" id="cancel-btn" style="display:none;" class="secondary">Cancel</button>
 
         <div id="selection-validation-message"></div>
       </div>
@@ -231,6 +230,8 @@ function validateSelection() {
 
     if (fullAudio) {
       messageDiv.innerHTML = `<p class="success-text">Looks good. Full audio download selected.</p>`;
+      const processButton = document.getElementById("process-selection-btn");
+      if (processButton) processButton.disabled = false;
       return true;
     }
   }
@@ -265,6 +266,8 @@ function validateSelection() {
   }
 
   messageDiv.innerHTML = `<p class="success-text">Looks good. Your selection is valid.</p>`;
+  const processButton = document.getElementById("process-selection-btn");
+  if (processButton) processButton.disabled = false;
   return true;
 }
 
