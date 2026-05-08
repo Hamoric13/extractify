@@ -91,6 +91,15 @@ def schedule_file_delete(filepath, delay_seconds=3600):
 
     threading.Thread(target=delete_later, daemon=True).start()
 
+def send_cookie_alert():
+    try:
+        subprocess.run([
+            "curl", "-d", "Extractify: YouTube cookies expired! Upload fresh cookies.",
+            "https://ntfy.sh/extractify-cookies-alert-haramrit"
+        ], capture_output=True)
+    except Exception:
+        pass
+
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
@@ -123,6 +132,8 @@ async def get_media_info(request: Request):
 
     if result.returncode != 0:
         error = result.stderr.strip().splitlines()[-1] if result.stderr else "Failed to fetch media info."
+        if "Sign in to confirm" in error or "bot" in error.lower():
+            send_cookie_alert()
         return JSONResponse({"error": error}, status_code=500)
 
     try:
