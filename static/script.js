@@ -201,7 +201,10 @@ function renderSelectionControls() {
 
   document.getElementById("cancel-btn").addEventListener("click", async () => {
     const cancelButton = document.getElementById("cancel-btn");
-    if (cancelButton) cancelButton.disabled = true;
+    if (cancelButton) {
+      cancelButton.disabled = true;
+      cancelButton.textContent = "Cancelling...";
+    }
     if (currentJobId) {
       await fetch(`/api/cancel/${currentJobId}`, { method: "POST" });
       currentJobId = null;
@@ -277,7 +280,11 @@ function setProcessingState(isBusy) {
   }
 
   if (validateButton) validateButton.disabled = isBusy;
-  if (cancelButton) cancelButton.style.display = isBusy ? "inline-block" : "none";
+  
+  if (cancelButton) {
+    cancelButton.disabled = false;
+    cancelButton.style.display = isBusy ? "inline-block" : "none";
+  }
 
   document.querySelectorAll('input[name="format_choice"]').forEach((radio) => {
     radio.disabled = isBusy;
