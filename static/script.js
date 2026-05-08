@@ -285,7 +285,9 @@ function setProcessingState(isBusy) {
 async function processSelection() {
   if (isProcessing) return;
 
-  currentJobId = crypto.randomUUID();
+  currentJobId = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ (Math.random() * 16 >> c / 4)).toString(16)
+  );
 
   const messageDiv = document.getElementById("selection-validation-message");
   if (!messageDiv || !selectedFormatData) return;
