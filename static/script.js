@@ -31,6 +31,17 @@ function enforceTimestampFormat(input) {
 function isValidTimestampFormat(value) {
   return /^\d{2}:\d{2}:\d{2}$/.test(value.trim());
 }
+function isSupportedURL(url) {
+  const supported = [
+    'youtube.com',
+    'youtu.be',
+    'youtube-nocookie.com',
+    'm.youtube.com',
+    'soundcloud.com',
+    'on.soundcloud.com',
+  ];
+  return supported.some(domain => url.includes(domain));
+}
 
 function formatBytes(bytes) {
   if (!bytes) return "Unknown";
@@ -394,6 +405,14 @@ form.addEventListener("submit", async (event) => {
     statusDiv.textContent = "Please paste a URL.";
     return;
   }
+
+  if (!isSupportedURL(url)) {
+    statusDiv.textContent = "Unsupported platform. We currently support YouTube and SoundCloud.";
+    return;
+  }
+  
+  
+  
 
   statusDiv.textContent = "Fetching media info...";
 
