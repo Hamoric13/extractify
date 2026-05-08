@@ -24,7 +24,6 @@ PROXY = os.environ.get("YTDLP_PROXY", "")
 
 BASE_CMD = [
     "yt-dlp",
-    "--cookies", COOKIE_FILE,
     "--js-runtimes", "node:/usr/bin/node",
     "--remote-components", "ejs:github",
 ]
