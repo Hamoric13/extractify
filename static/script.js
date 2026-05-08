@@ -200,6 +200,8 @@ function renderSelectionControls() {
   enforceTimestampFormat(document.getElementById("end-time"));
 
   document.getElementById("cancel-btn").addEventListener("click", async () => {
+    const cancelButton = document.getElementById("cancel-btn");
+    if (cancelButton) cancelButton.disabled = true;
     if (currentJobId) {
       await fetch(`/api/cancel/${currentJobId}`, { method: "POST" });
       currentJobId = null;
