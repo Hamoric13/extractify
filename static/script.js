@@ -434,4 +434,11 @@ form.addEventListener("submit", async (event) => {
     statusDiv.textContent = "Failed to fetch media info.";
     console.error(error);
   }
+}
+window.addEventListener("beforeunload", (event) => {
+  if (isProcessing && currentJobId) {
+    navigator.sendBeacon(`/api/cancel/${currentJobId}`);
+  }
 });
+
+);
