@@ -22,20 +22,29 @@ COOKIE_FILE = "/app/secrets/cookies.txt"
 
 PROXY = os.environ.get("YTDLP_PROXY", "")
 
-BASE_CMD = [
+BASE_CMD_INFO = [
     "yt-dlp",
     "--js-runtimes", "node:/usr/bin/node",
     "--remote-components", "ejs:github",
 ]
 
 if PROXY:
-    BASE_CMD += ["--proxy", PROXY]
+    BASE_CMD_INFO += ["--proxy", PROXY]
 
 if os.path.exists(COOKIE_FILE) and os.path.getsize(COOKIE_FILE) > 100:
-    BASE_CMD += ["--cookies", COOKIE_FILE]
+    BASE_CMD_INFO += ["--cookies", COOKIE_FILE]
 
-def run_ytdlp(job_id, *args):
-    cmd = BASE_CMD + list(args)
+BASE_CMD_DOWNLOAD = [
+    "yt-dlp",
+    "--js-runtimes", "node:/usr/bin/node",
+    "--remote-components", "ejs:github",
+]
+
+if os.path.exists(COOKIE_FILE) and os.path.getsize(COOKIE_FILE) > 100:
+    BASE_CMD_DOWNLOAD += ["--cookies", COOKIE_FILE]
+
+def run_ytdlp(job_id, cmd_base, *args):
+    cmd = cmd_base + list(args)
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     active_jobs[job_id] = process
     stdout, stderr = process.communicate()
@@ -130,7 +139,7 @@ async def get_media_info(request: Request):
     if not url:
         return JSONResponse({"error": "URL is required."}, status_code=400)
 
-    result = run_ytdlp("info", "--dump-json", "--no-playlist", url)
+    result = run_ytdlp("info", BASE_CMD_INFO, "--dump-json", "--no-playlist", url)
 
     if result.returncode != 0:
         error = result.stderr.strip().splitlines()[-1] if result.stderr else "Failed to fetch media info."
@@ -326,6 +335,7 @@ async def process_media(request: Request):
         if media_type == "audio" and full_audio:
             result = run_ytdlp(
                 job_id,
+                BASE_CMD_DOWNLOAD,
                 "--format", format_id,
                 "--output", output_template,
                 "--no-playlist",
@@ -349,7 +359,7 @@ async def process_media(request: Request):
             if media_type == "video":
                 extra_args += ["--merge-output-format", "mp4"]
 
-            result = run_ytdlp(job_id, *extra_args, url)
+            result = run_ytdlp(job_id, BASE_CMD_DOWNLOAD, *extra_args, url)
 
         if result.returncode != 0:
             error = result.stderr.strip().splitlines()[-1] if result.stderr else "Processing failed."
